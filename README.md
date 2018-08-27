@@ -4,7 +4,7 @@
  and extract light curves of stars for the purpose of variability and 
  asteroseismology. **AEAP** is coded in python and has no external 
  software  dependencies such as IRAF, DS9 or Gaia, and utilises the 
- flexible python module **[SEP]**(https://sep.readthedocs.io/en/v1.0.x/) 
+ flexible python module [SEP](https://sep.readthedocs.io/en/v1.0.x/) 
  at its core. The code is optimised for high-cadence ground-based
  photometry, such as that provided by the SHOC and STE instruments at
  the [South African Astronomical Observatory (SAAO)](https://www.saao.ac.za),
@@ -15,7 +15,7 @@
  provided by the users are well accepted. See disclaimer below and GNU 
  License in gpl-3.0.txt.
 
---
+---
 ## Get **AEAP**
 **AEAP** is available on 
 
