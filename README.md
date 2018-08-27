@@ -1,4 +1,4 @@
-# This is the [Adaptive Elliptical Aperture Photometry](https://bitbucket.org/DominicBowman/Adaptive elliptical aperture photometry/overview) repository
+# This is the [Adaptive Elliptical Aperture Photometry](https://bitbucket.org/DominicBowman/adaptive-elliptical-aperture-photometry) repository
 
 **AEAP** is a user-friendly pipeline to process ground-based photometry 
  and extract light curves of stars for the purpose of variability and 
