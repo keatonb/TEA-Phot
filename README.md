@@ -27,22 +27,6 @@ git clone https://bitbucket.org/DominicBowman/adaptive-elliptical-aperture-photo
 ```
 
 ---
-## Get help
-
-To get support or receive news about KROME please refer to our user mailing list: 
-
- - https://groups.google.com/forum/#!forum/kromeusers
-
-
-More information on the wiki
-
- - https://bitbucket.org/tgrassi/krome/wiki/Home
-
-Additional material can be found in the Computational Astrochemistry Schools website
-
- - http://kromepackage.org/bootcamp/
-
----
 ## Authors
 
 Written and developed by Dominic Bowman
