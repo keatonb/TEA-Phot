@@ -39,11 +39,9 @@ USAGE:
         # STE...
         > python AAP_beta_v07.py SAAO STE a --image_dir ../directory_test/image --bias a --bias_dir ../directory_test/bias --flat f --flat_dir ../directory_test/flat/ --object HD158596 --coord "17:31:03.46 -21:29:07.04" --do_plot True
 
-
 WARNINGS WHILST RUNNING (SUPPRESSED):
     - WARNING: VerifyWarning: Card is too long, comment will be truncated.
         [astropy.io.fits.card]
-
 
 KNOWN ISSUES/BUGS:
     - programme crahses if multiple (red) sources are within pixel limit of
