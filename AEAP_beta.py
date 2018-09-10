@@ -992,7 +992,7 @@ if __name__ == '__main__':
                 ellipse_plot(objects['x'][j], objects['y'][j], size,
                              objects['a'][j], objects['b'][j],
                              objects['theta'][j], 'none', 'red', [1])
-            
+
             if do_plot:
                 plt.savefig("extracted_sources.eps", dpi=300)
 
@@ -1021,7 +1021,7 @@ if __name__ == '__main__':
 
                     # find star nearest to user's input
                     index = np.r_[(init_pix_x < x_max_pix_objects+pix_limit) & (init_pix_x > x_min_pix_objects-pix_limit) & (init_pix_y < y_max_pix_objects+pix_limit) & (init_pix_y > y_min_pix_objects-pix_limit)]
-                    
+
                 except ValueError:
                     print("\n     !!! ERROR: you need to click on the screen to choose a target star")
                     continue
