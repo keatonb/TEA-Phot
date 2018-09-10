@@ -48,10 +48,10 @@ KNOWN ISSUES/BUGS:
         user's choice. This usually only occurs if the sources are blurred and
         the resultant PSFs are highly elliptical such that sep.extract() finds
         multiple ellipses at a single star's location
-    - if user closes a window, programme will hang and becomes difficult to kill
-        from the terminal
-    - sep.sum_ellipse() returns ZeroDivisionError if annuli option is chosen and
-        they are larger than the CCD image frame
+    - if user closes a window, programme will hang and becomes difficult to
+        kill from the terminal
+    - sep.sum_ellipse() returns ZeroDivisionError if annuli option is chosen
+        and they are larger than the CCD image frame
 
 """
 
