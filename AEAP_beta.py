@@ -2,8 +2,28 @@
 
 """
 PROGRAMME NAME:
-    AAP_beta_v07.py
-    (originally based on aperture_photometry_SAAO_v02.py)
+    AEAP_beta.py
+
+    Copyright (C) 2018
+    D. M. Bowman (IvS, KU Leuven, Belgium)
+    D. L. Holdsworth (JHI, UCLan, UK)
+
+    This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+    This is free software, and you are welcome to redistribute it
+    under certain conditions; type `show c' for details.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but without any warranty; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 DESCRIPTION:
     - Extract a differential light curve using adaptive elliptical apertures
@@ -16,13 +36,6 @@ DESCRIPTION:
         which is preceded by ">>>" in the terminal.
     - Warnings and errors are output to the terminal and are preceded by
         '! WARNING:' and '!!! ERROR:', respectively.
-
-AUTHORS:
-    Dominic Bowman, IvS, KU Leuven, Belgium
-    Daniel Holdsworth, JHI, UCLan, UK
-
-LAST MODIFIED:
-    10th August 2018
 
 USAGE:
     - For help, type at the command line: python AAP_beta_v07.py --help
@@ -37,13 +50,11 @@ USAGE:
         > python AAP_beta_v07.py SAAO SHOC SHA_20180513.0018.fits --bias SHA_20180513.0025.fits --flat SHA_20180513.0027.fits --object HD181810 --coord "19:22:43.56 -21:25:27.53" --source_sigma 10 --extract True --do_plot True --do_clip 10 --extinction 0.25 --image_dir ./ --bias_dir ./ --flat_dir ./
 
         # STE...
-        > python AAP_beta_v07.py SAAO STE a --image_dir ../directory_test/image --bias a --bias_dir ../directory_test/bias --flat f --flat_dir ../directory_test/flat/ --object HD158596 --coord "17:31:03.46 -21:29:07.04" --do_plot True
-
+        > python AAP_beta_v07.py SAAO STE a --image_dir ../directory_test/image --bias a --bias_dir ../directory_test/bias --flat a --flat_dir ../directory_test/flat/ --object HD158596 --coord "17:31:03.46 -21:29:07.04" --do_plot True
 
 WARNINGS WHILST RUNNING (SUPPRESSED):
     - WARNING: VerifyWarning: Card is too long, comment will be truncated.
         [astropy.io.fits.card]
-
 
 KNOWN ISSUES/BUGS:
     - programme crahses if multiple (red) sources are within pixel limit of
@@ -179,7 +190,7 @@ def image_reduction(instrument, bias, bias_dir, flat, flat_dir, do_plot,
                 trim_x1, trim_x2, trim_y1, trim_y2 = new_trim[0], new_trim[1], new_trim[2], new_trim[3]
                 # s = header['BIASSEC'] # "bias overscan region"
                 bias_data = bias_hdu.data.astype(np.float)
-                bias_data = bias_data[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]
+                # bias_data = bias_data[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]  # removed
                 bias_concat.append(bias_data)
 
         # take median of all biases to make master bias
@@ -228,7 +239,7 @@ def image_reduction(instrument, bias, bias_dir, flat, flat_dir, do_plot,
                 trim_x1, trim_x2, trim_y1, trim_y2 = new_trim[0], new_trim[1], new_trim[2], new_trim[3]
                 # s = header['BIASSEC'] # "bias overscan region"
                 flat_data = flat_hdu.data.astype(np.float)
-                flat_data = flat_data[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]
+                # flat_data = flat_data[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]  # removed
                 flat_mean = np.mean(flat_data)
                 norm_flat.append((flat_data / flat_mean))
 
@@ -578,7 +589,6 @@ def str2flt(v):
     else:
         raise argparse.ArgumentTypeError('\n\n !!! ERROR: a float is expected for these optional parameters: \n            --source_sigma 10 \n            --do_clip 5 \n            --extinction 0.25 \n')
 
-
 ###############################################################################
 # # # # # # # # # # # # # # BELOW IS THE MAIN CODE # # # # # # # # # # # # # #
 ###############################################################################
@@ -598,7 +608,14 @@ if __name__ == '__main__':
     os.system("clear")
 
     # read command line arguments
-    parser = argparse.ArgumentParser(description="\n-------------------- AAP: Adaptive Aperture Photometry --------------------\n")
+    parser = argparse.ArgumentParser(prog="AEAP_beta.py",
+                                     description="------------ Adaptive Elliptical Aperture Photometry ------------",
+                                     epilog='''
+                                            AEAP_beta.py  Copyright (C) 2018
+                                            D. M. Bowman (KU Leuven) and D. L. Holdworth (UCLan).
+                                            This program comes with ABSOLUTELY NO WARRANTY.
+                                            This is free software, and you are welcome to redistribute it.
+                                            ''')
     parser.add_argument('observatory', type=str, help="Observatory name (e.g. SAAO); <str>")
     parser.add_argument('instrument', type=str, help="Instrument name (e.g. SHOC or STE); <str>")
     parser.add_argument('image', type=str, help="If using the SHOC instrument <image> is the filename of image FITS cube; if using the STE instrument <image> is automatically set to 'a' <str>")
@@ -911,7 +928,7 @@ if __name__ == '__main__':
 
         # reductions of raw to reduced image frames
         raw_image = hdu.data.astype(dtype=float)
-        raw_image = raw_image[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]
+        # raw_image = raw_image[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]  # removed
 
         # create an image mask for source extraction
         # masks work in extract such that True pixels are not considered
@@ -1202,19 +1219,21 @@ if __name__ == '__main__':
             print("     ! WARNING: multiple apertures on comparison star: skipping frame "+str(i))
             do_comp = False
 
-        # warn user if CCD exceeds linearity (not really needed)
-        if (objects['peak'][index] > 58000) and (objects['peak'][index] < 62000):
-            print("     ! WARNING: target star flux is high: "+str('%i' % objects['peak'][index])+" counts in frame "+str(i)+"\n")
-        elif objects['peak'][index] >= 62000:
-            print("     ! WARNING: target star has saturated: "+str('%i' % objects['peak'][index])+" counts in frame "+str(i)+"\n")
-            do_targ = False
+        if do_targ:
+            # warn user if CCD exceeds linearity (not really needed)
+            if (objects['peak'][index] > 58000) and (objects['peak'][index] < 62000):
+                print("     ! WARNING: target star flux is high: "+str('%i' % objects['peak'][index])+" counts in frame "+str(i)+"\n")
+            elif objects['peak'][index] >= 62000:
+                print("     ! WARNING: target star has saturated: "+str('%i' % objects['peak'][index])+" counts in frame "+str(i)+"\n")
+                do_targ = False
 
-        # skip frame if CCD saturates
-        if (objects['peak'][index_comp] > 58000) and (objects['peak'][index_comp] < 62000):
-            print("     ! WARNING: comparison star flux is high: "+str('%i' % objects['peak'][index_comp])+" counts in frame "+str(i)+"\n")
-        elif objects['peak'][index_comp] >= 62000:
-            print("     ! WARNING: comparison star has saturated: "+str('%i' % objects['peak'][index_comp])+" counts in frame "+str(i)+"\n")
-            do_comp = False
+        if do_comp:
+            # skip frame if CCD saturates
+            if (objects['peak'][index_comp] > 58000) and (objects['peak'][index_comp] < 62000):
+                print("     ! WARNING: comparison star flux is high: "+str('%i' % objects['peak'][index_comp])+" counts in frame "+str(i)+"\n")
+            elif objects['peak'][index_comp] >= 62000:
+                print("     ! WARNING: comparison star has saturated: "+str('%i' % objects['peak'][index_comp])+" counts in frame "+str(i)+"\n")
+                do_comp = False
 
         # if both target and comparison stars get errors, proceed to next frame
         if do_targ is False and do_comp is False:
@@ -1483,10 +1502,12 @@ if __name__ == '__main__':
         if sky_background == "star":
             sky_pix_x = sky_pix_x + change_pix_x
             sky_pix_y = sky_pix_y + change_pix_y
-        init_pix_x = 0.5*(x_min_pix_objects[index] + x_max_pix_objects[index])
-        init_pix_y = 0.5*(y_min_pix_objects[index] + y_max_pix_objects[index])
-        comp_pix_x = 0.5*(x_min_pix_objects[index_comp] + x_max_pix_objects[index_comp])
-        comp_pix_y = 0.5*(y_min_pix_objects[index_comp] + y_max_pix_objects[index_comp])
+        if do_targ is True:
+            init_pix_x = 0.5*(x_min_pix_objects[index] + x_max_pix_objects[index])
+            init_pix_y = 0.5*(y_min_pix_objects[index] + y_max_pix_objects[index])
+        if do_comp is True:
+            comp_pix_x = 0.5*(x_min_pix_objects[index_comp] + x_max_pix_objects[index_comp])
+            comp_pix_y = 0.5*(y_min_pix_objects[index_comp] + y_max_pix_objects[index_comp])
 
     plt.close('all')
 
