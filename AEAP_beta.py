@@ -38,19 +38,19 @@ DESCRIPTION:
         '! WARNING:' and '!!! ERROR:', respectively.
 
 USAGE:
-    - For help, type at the command line: python AAP_beta_v07.py --help
+    - For help, type at the command line: python AEAP_beta.py --help
     - MINIMUM USAGE:
-        python AAP_beta_v07.py <observatory> <instrument> <image>
-        > python AAP_beta_v07.py SAAO SHOC SHA_20180513.0018.fits
+        python AEAP_beta.py <observatory> <instrument> <image>
+        > python AEAP_beta.py SAAO SHOC SHA_20180513.0018.fits
 
     - OPTIONS:
-        python AAP_beta_v07.py <observatory> <instrument> <image.fits> --bias <bias.fits> --dark <dark.fits> --flat <flat.fits> --object <object> --coord <"19:22:43.56 -21:25:27.53"> --source_sigma <10> --extract <True> --do_plot <True> --do_clip <10> --extinction <0.25> --image_dir <./> --bias_dir <./> --flat_dir <./>
+        python AEAP_beta.py <observatory> <instrument> <image.fits> --bias <bias.fits> --dark <dark.fits> --flat <flat.fits> --object <object> --coord <"19:22:43.56 -21:25:27.53"> --source_sigma <10> --extract <True> --do_plot <True> --do_clip <10> --extinction <0.25> --image_dir <./> --bias_dir <./> --flat_dir <./>
 
         # SHOC...
-        > python AAP_beta_v07.py SAAO SHOC SHA_20180513.0018.fits --bias SHA_20180513.0025.fits --flat SHA_20180513.0027.fits --object HD181810 --coord "19:22:43.56 -21:25:27.53" --source_sigma 10 --extract True --do_plot True --do_clip 10 --extinction 0.25 --image_dir ./ --bias_dir ./ --flat_dir ./
+        > python AEAP_beta.py SAAO SHOC SHA_20180513.0018.fits --bias SHA_20180513.0025.fits --flat SHA_20180513.0027.fits --object HD181810 --coord "19:22:43.56 -21:25:27.53" --source_sigma 10 --extract True --do_plot True --do_clip 10 --extinction 0.25 --image_dir ./ --bias_dir ./ --flat_dir ./
 
         # STE...
-        > python AAP_beta_v07.py SAAO STE a --image_dir ../directory_test/image --bias a --bias_dir ../directory_test/bias --flat a --flat_dir ../directory_test/flat/ --object HD158596 --coord "17:31:03.46 -21:29:07.04" --do_plot True
+        > python AEAP_beta.py SAAO STE a --image_dir ../directory_test/image --bias a --bias_dir ../directory_test/bias --flat a --flat_dir ../directory_test/flat/ --object HD158596 --coord "17:31:03.46 -21:29:07.04" --do_plot True
 
 WARNINGS WHILST RUNNING (SUPPRESSED):
     - WARNING: VerifyWarning: Card is too long, comment will be truncated.
@@ -803,9 +803,10 @@ if __name__ == '__main__':
         for file in os.listdir(image_dir):
             if image in file:
                 image_files.append(file)
-            else:
-                print("\n     !!! ERROR: no IMAGE files containing the string: <"+str(image)+"> found in: <"+str(image_dir)+"> directory \n")
-                exit()
+
+        if len(image_files) == 0:
+            print("\n     !!! ERROR: no IMAGE files containing the string: <"+str(image)+"> found in: <"+str(image_dir)+"> directory \n")
+            exit()
         n_slice = len(image_files)
 
         # read if IMAGE file extension is .fits OR .fits.fz
@@ -1203,20 +1204,20 @@ if __name__ == '__main__':
 
         # skip frame if no stars are detected
         if len(objects[index]) < 1:
-            print("     ! WARNING: no target star detected: skipping frame "+str(i))
+            print("     ! WARNING: no target star detected in frame "+str(i))
             do_targ = False
 
         if len(objects[index_comp]) < 1:
-            print("     ! WARNING: no comparison star detected: skipping frame "+str(i))
+            print("     ! WARNING: no comparison star detected in frame "+str(i))
             do_comp = False
 
         # skip frame if multiple apertures are fitted
         if len(objects[index]) > 1:
-            print("     ! WARNING: multiple apertures on target star: skipping frame "+str(i))
+            print("     ! WARNING: multiple apertures on target star in frame "+str(i))
             do_targ = False
 
         if len(objects[index_comp]) > 1:
-            print("     ! WARNING: multiple apertures on comparison star: skipping frame "+str(i))
+            print("     ! WARNING: multiple apertures on comparison star in frame "+str(i))
             do_comp = False
 
         if do_targ:
