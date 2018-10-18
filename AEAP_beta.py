@@ -27,11 +27,13 @@ PROGRAMME NAME:
 
 DESCRIPTION:
     - Extract a differential light curve using adaptive elliptical apertures
-        for FITS files from SAAO.
+        for FITS files.
+    - Source extraction and aperature photometry is performed using the python
+        SEP module: https://sep.readthedocs.io/en/v1.0.x/
     - The code is optimised for SHOC@SAAO photometry, but can and should be
         easily modified to work with other CCD instruments and telescopes.
-    - BE AWARE: different instruments have different FITS headers and thus
-        requires a modification of this code.
+    - BE AWARE: different instruments have different FITS headers and this
+        requires a modification of the code.
     - This code requires user input at the command line and clicking on a plot,
         which is preceded by ">>>" in the terminal.
     - Warnings and errors are output to the terminal and are preceded by
@@ -40,17 +42,10 @@ DESCRIPTION:
 USAGE:
     - For help, type at the command line: python AEAP_beta.py --help
     - MINIMUM USAGE:
-        python AEAP_beta.py <observatory> <instrument> <image>
-        > python AEAP_beta.py SAAO SHOC SHA_20180513.0018.fits
+        python AEAP_beta.py <observatory> <instrument> <image.fits>
 
     - OPTIONS:
-        python AEAP_beta.py <observatory> <instrument> <image.fits> --bias <bias.fits> --dark <dark.fits> --flat <flat.fits> --object <object> --coord <"19:22:43.56 -21:25:27.53"> --source_sigma <10> --extract <True> --do_plot <True> --do_clip <10> --extinction <0.25> --image_dir <./> --bias_dir <./> --flat_dir <./>
-
-        # SHOC...
-        > python AEAP_beta.py SAAO SHOC SHA_20180513.0018.fits --bias SHA_20180513.0025.fits --flat SHA_20180513.0027.fits --object HD181810 --coord "19:22:43.56 -21:25:27.53" --source_sigma 10 --extract True --do_plot True --do_clip 10 --extinction 0.25 --image_dir ./ --bias_dir ./ --flat_dir ./
-
-        # STE...
-        > python AEAP_beta.py SAAO STE a --image_dir ../directory_test/image --bias a --bias_dir ../directory_test/bias --flat a --flat_dir ../directory_test/flat/ --object HD158596 --coord "17:31:03.46 -21:29:07.04" --do_plot True
+        python AEAP_beta.py <observatory> <instrument> <image.fits> --bias <bias.fits> --dark <dark.fits> --flat <flat.fits> --object <object> --coord <"19:22:43.56 -21:25:27.53"> --source_sigma <10> --extract <True> --do_plot <True> --do_clip <10> --extinction <0.25> --image_dir <./> --bias_dir <./> --flat_dir <./> --out_dir <./>
 
 WARNINGS WHILST RUNNING (SUPPRESSED):
     - WARNING: VerifyWarning: Card is too long, comment will be truncated.
@@ -61,10 +56,10 @@ KNOWN ISSUES/BUGS:
         user's choice. This usually only occurs if the sources are blurred and
         the resultant PSFs are highly elliptical such that sep.extract() finds
         multiple ellipses at a single star's location
-    - if user closes a window, programme will hang and becomes difficult to kill
-        from the terminal
-    - sep.sum_ellipse() returns ZeroDivisionError if annuli option is chosen and
-        they are larger than the CCD image frame
+    - if user closes a window, programme will hang and becomes difficult to
+        kill from the terminal
+    - sep.sum_ellipse() returns ZeroDivisionError if annuli option is chosen
+        and they are larger than the CCD image frame
 
 """
 
@@ -94,7 +89,7 @@ warnings.simplefilter("ignore")
 # FUNCTION: bias, dark and flat field correction
 
 def image_reduction(instrument, bias, bias_dir, flat, flat_dir, do_plot,
-                    **kwargs):
+                    out_dir, **kwargs):
 
     # SHOC INSTRUMENT...
     if instrument == "SHOC":
@@ -261,7 +256,7 @@ def image_reduction(instrument, bias, bias_dir, flat, flat_dir, do_plot,
                        vmin=m-s, vmax=m+s, origin='lower')
         tick_plot(ax, master_bias[0], master_bias[1])  # call tick function
         plt.colorbar(im, label="Counts", extend='both')
-        plt.savefig("master_bias.eps", dpi=300)
+        plt.savefig(out_dir+"master_bias.eps", dpi=300)
         plt.close(1)
 
     if do_plot:
@@ -273,7 +268,7 @@ def image_reduction(instrument, bias, bias_dir, flat, flat_dir, do_plot,
                        vmin=m-s, vmax=m+s, origin='lower')
         tick_plot(ax, master_flat[0], master_flat[1])  # call tick function
         plt.colorbar(im, label="Normalised Counts", extend='both')
-        plt.savefig("master_flat.eps", dpi=300)
+        plt.savefig(out_dir+"master_flat.eps", dpi=300)
         plt.close(2)
 
     return master_bias, master_flat
@@ -352,10 +347,10 @@ def find_midpoint(instrument, header, iter):
         # Internal trigger: FRAME timestamp is *END* of the first exposure
         # Note: that the FITS file comment is WRONG (see SHOC paper)
         if trigger == "Internal":
-            exp_time = np.float(header['Exposure'])         # units of sec
-            ACT_time = np.float(header['ACT'])              # units of sec
-            read_time = (ACT_time - exp_time) / 86400.0     # units of days
-            exp_time = exp_time / 86400.0                   # convert into days
+            exp_time = np.float(header['Exposure'])      # units of sec
+            ACT_time = np.float(header['ACT'])           # units of sec
+            read_time = (ACT_time - exp_time) / 86400.0  # units of days
+            exp_time = exp_time / 86400.0                # convert into days
 
             # read time_stamp and *SUBTRACT* half exp_time to get midpoint
             t0 = time.Time(header['FRAME'], format='isot', scale='utc',
@@ -365,9 +360,9 @@ def find_midpoint(instrument, header, iter):
         # External Start: FRAME timestamp is *END* of the first exposure
         # Note: that the FITS file comment is WRONG (see SHOC paper)
         elif trigger == "External Start":
-            exp_time = np.float(header['Exposure'])         # units of sec
-            exp_time = exp_time / 86400.0                   # convert into days
-            read_time = 0.00676 / 86400.0                   # hard-coded since not in FITS header
+            exp_time = np.float(header['Exposure'])     # units of sec
+            exp_time = exp_time / 86400.0               # convert into days
+            read_time = 0.00676 / 86400.0               # hard-coded as not in FITS header
 
             # read time_stamp and *SUBTRACT* half exp_time to get midpoint
             t0 = time.Time(header['FRAME'], format='isot', scale='utc',
@@ -376,9 +371,9 @@ def find_midpoint(instrument, header, iter):
 
         # External trigger: FRAME timestamp is *START* of the first exposure
         elif trigger == "External":
-            exp_time = np.float(header['GPS-INT'])          # units of msec
-            exp_time = exp_time / 1000.0 / 86400.0          # convert into days
-            read_time = 0.00676 / 86400.0                   # hard-coded since not in FITS header
+            exp_time = np.float(header['GPS-INT'])      # units of msec
+            exp_time = exp_time / 1000.0 / 86400.0      # convert into days
+            read_time = 0.00676 / 86400.0               # hard-coded as not in FITS header
 
             # read time_stamp and *ADD* half exp_time to get midpoint
             t0 = time.Time(header['FRAME'], format='isot', scale='utc',
@@ -404,7 +399,7 @@ def find_midpoint(instrument, header, iter):
         # STE gives UT stamps at *START* of exposures so add on half exp time
         t0_date = header['DATE-OBS']
         t0_time = header['UT']
-        obs_date=t0_date+"T"+t0_time
+        obs_date = t0_date+"T"+t0_time
         t0 = time.Time(obs_date, format='isot', scale='ut1', precision=9)
         midpoint_JD = (t0.ut1.jd + 0.5*exp_time)
 
@@ -428,10 +423,10 @@ def find_instrument(instrument, header):
     if instrument == "SHOC":
 
         # read specific keywords from FITS header
-        serial_num = np.str(header['SERNO'])  # serial number of instrument
-        preamp_gain = np.str(header['PREAMP'])  # preamp gain needed to look up sensitivity gain
-        pixelreadtime = np.str(header['READTIME'])  # the pixel readtime
-        outptamp = np.str(header['OUTPTAMP'])  # typically only set as conventional
+        serial_num = np.str(header['SERNO'])        # instrument serial number
+        preamp_gain = np.str(header['PREAMP'])      # preamp gain used to look-up sensitivity gain
+        pixelreadtime = np.str(header['READTIME'])  # pixel readtime
+        outptamp = np.str(header['OUTPTAMP'])       # typically set as conventional
 
         # SHOC1 (SHA)
         if serial_num == "5982":
@@ -589,6 +584,7 @@ def str2flt(v):
     else:
         raise argparse.ArgumentTypeError('\n\n !!! ERROR: a float is expected for these optional parameters: \n            --source_sigma 10 \n            --do_clip 5 \n            --extinction 0.25 \n')
 
+
 ###############################################################################
 # # # # # # # # # # # # # # BELOW IS THE MAIN CODE # # # # # # # # # # # # # #
 ###############################################################################
@@ -612,7 +608,7 @@ if __name__ == '__main__':
                                      description="------------ Adaptive Elliptical Aperture Photometry ------------",
                                      epilog='''
                                             AEAP_beta.py  Copyright (C) 2018
-                                            D. M. Bowman (KU Leuven) and D. L. Holdworth (UCLan).
+                                            D. M. Bowman (KU Leuven) and D. L. Holdsworth (UCLan).
                                             This program comes with ABSOLUTELY NO WARRANTY.
                                             This is free software, and you are welcome to redistribute it.
                                             ''')
@@ -624,14 +620,14 @@ if __name__ == '__main__':
     #parser.add_argument('--dark', type=str, help="Filename of dark FITS cube (with SHOC), or a or a common pre-fix string to search for multiple dark files (e.g. STE); <str>") # TO DO
     parser.add_argument('--flat', type=str, help="Filename of flat FITS cube (with SHOC), or a or a common pre-fix string to search for multiple flat files (e.g. STE); <str>")
 
-    parser.add_argument('--image_dir', type=str, default='./', action = 'store', help="Directory path of where image file(s) are located; <str>")
-    parser.add_argument('--bias_dir', type=str, default='./', action = 'store', help="Directory path of where bias file(s) are located; <str>")
+    parser.add_argument('--image_dir', type=str, default='./', action='store', help="Directory path of where image file(s) are located; <str>")
+    parser.add_argument('--bias_dir', type=str, default='./', action='store', help="Directory path of where bias file(s) are located; <str>")
     #parser.add_argument('--dark_dir', type=str, default='./', action = 'store', help="Directory path of where dark file(s) are located; <str>") # TO DO
-    parser.add_argument('--flat_dir', type=str, default='./', action = 'store', help="Directory path of where flat file(s) are located; <str>")
-
+    parser.add_argument('--flat_dir', type=str, default='./', action='store', help="Directory path of where flat file(s) are located; <str>")
+    parser.add_argument('--out_dir', type=str, default='./', action='store', help="Directory path of where code output; <str>")
     parser.add_argument('--object', default=None, type=str, help="Overwrite the object name in FITS header; <str>")
     parser.add_argument('--coord', default=None, type=two_strs, help="Overwrite the coordinates [ra,dec] of target star in FITS header; <'00:00:00.00 -00:00:00.00'> ")
-    parser.add_argument('--source_sigma', default='10', action = 'store', type=str2flt, help="The S/N of the image source extraction; <float>")
+    parser.add_argument('--source_sigma', default='10', action='store', type=str2flt, help="The S/N of the image source extraction; <float>")
     parser.add_argument('--do_plot', default=False, type=str2bool, help="Plot and save all figures; <bool>")
     parser.add_argument('--extract', default=False, type=str2bool, help="Extract and save individual FITS files containing reduced images in a subdirectory; <bool>")
     parser.add_argument('--do_clip', default=None, type=str2flt, help="Sigma value for outlier removal in differential light curve; <float>")
@@ -658,14 +654,13 @@ if __name__ == '__main__':
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # 'changeable inputs' for APERTURE PHOTOMETRY (only for the expert)
 
-    # approximate size of a 1.5-2.0 times target FWHM in CCD image
-    # (only used for plotting ellipses in images: not used for science)
+    # size of plotting ellipses in images: not used for science
     size = 4
 
     # sizes used for curve of growth assessment for optimum aperture size
     ap_size = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    # pixel tolerance source extraction from frame-to-frame
+    # pixel tolerance for jitter in source extraction from frame-to-frame
     pix_limit = 10
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -675,10 +670,12 @@ if __name__ == '__main__':
 
     # check if user-provided instrument is known
     """
-    # TIP: you will need to include alternative instrument names here, but also
-    at all other necessary locations (and functions) in the code
+    # TIP: you will need to include alternative observatory and instrument
+    names below, but also at all other necessary locations (and functions) in
+    the code
     """
     known_instruments = ["SHOC", "STE"]
+
     if instrument == "SHOC":
         cube = True
     elif instrument == "STE":
@@ -687,7 +684,7 @@ if __name__ == '__main__':
         STE FITS files always start with 'a'. The code *requires* FITS files
         to be orgainised into approproprite directories
         """
-        image, bias, flat = "a", "a", "a"
+        image, bias, flat = "a", "a", "a"  # STE FITS files all start with 'a'
         cube = False
         extract = False  # only allow extract if cube not False
     else:
@@ -734,6 +731,12 @@ if __name__ == '__main__':
         print("\n     !!! ERROR: specified FLAT directory does not exist:")
         print("               "+str(flat_dir)+"\n")
         exit()
+    out_dir = args.out_dir
+    out_dir = os.path.dirname(out_dir)
+    if not os.path.exists(out_dir):
+        print("\n (*) The specfied 'out_dir' did not exist, so it has been created \n")
+        os.makedirs(out_dir)
+    out_dir = out_dir+"/"
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # BELOW SETS UP TO CUBE MODULE (E.G. SHOC AT SAAO)...
@@ -858,11 +861,12 @@ if __name__ == '__main__':
     # calculate bias and flat-field master frames
     if args.flat and args.bias:
         master_bias, master_flat = image_reduction(instrument, bias, bias_dir,
-                                                   flat, flat_dir, do_plot)
+                                                   flat, flat_dir, do_plot,
+                                                   out_dir)
 
-    # create directory for extracted fit files
+    # create directory for extracted FITS files if it doesnt exist
     if extract:
-        fit_path = "./"+image_filename+"/"
+        fit_path = out_dir+image_filename+"/"
         fit_dir = os.path.dirname(fit_path)
         if not os.path.exists(fit_dir):
             os.makedirs(fit_dir)
@@ -929,7 +933,7 @@ if __name__ == '__main__':
 
         # reductions of raw to reduced image frames
         raw_image = hdu.data.astype(dtype=float)
-        # raw_image = raw_image[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]  # removed
+        # raw_image = raw_image[int(trim_y1):int(trim_y2), int(trim_x1):int(trim_x2)]  # removed as not needed to crop image
 
         # create an image mask for source extraction
         # masks work in extract such that True pixels are not considered
@@ -1012,7 +1016,7 @@ if __name__ == '__main__':
                              objects['theta'][j], 'none', 'red', [1])
 
             if do_plot:
-                plt.savefig("extracted_sources.eps", dpi=300)
+                plt.savefig(out_dir+"extracted_sources.eps", dpi=300)
 
             # plt.title("Reduced CCD image of "+str(star_name))
             plt.show(block=False)
@@ -1038,14 +1042,17 @@ if __name__ == '__main__':
                     init_pix_y = map(lambda x: x[1], click)
 
                     # find star nearest to user's input
-                    index = np.r_[(init_pix_x < x_max_pix_objects+pix_limit) & (init_pix_x > x_min_pix_objects-pix_limit) & (init_pix_y < y_max_pix_objects+pix_limit) & (init_pix_y > y_min_pix_objects-pix_limit)]
+                    index = np.r_[(init_pix_x < x_max_pix_objects+pix_limit)
+                                  & (init_pix_x > x_min_pix_objects-pix_limit)
+                                  & (init_pix_y < y_max_pix_objects+pix_limit)
+                                  & (init_pix_y > y_min_pix_objects-pix_limit)]
 
                 except ValueError:
                     print("\n     !!! ERROR: you need to click on the screen to choose a target star")
                     continue
 
                 # break loop if target found successfully
-                if index.any() == True:
+                if index.any() == True:  # changed from if X == True:
                     print("     > Found target star located at:")
                     print("     > (X,Y) = [ "+str('%.2f' % objects['x'][index])+" , "+str('%.2f' % objects['y'][index])+" ]")
                     break
@@ -1100,7 +1107,7 @@ if __name__ == '__main__':
                         break
 
                 # break loop if target found successfully
-                if index_comp.any() == True:
+                if index_comp.any() == True:  # changed from if X == True:
                     print("     > Found comparison star located at:")
                     print("     > (X,Y) = [ "+str('%.2f' % objects['x'][index_comp])+" , "+str('%.2f' % objects['y'][index_comp])+" ]")
                     break
@@ -1117,7 +1124,7 @@ if __name__ == '__main__':
                          objects['theta'][index_comp], 'none', 'blue',
                          [1.0, 1.5, 2.0])
 
-            # ask the user if they want a sky background or annulus subtraction?
+            # ask user for either a sky background or annulus subtraction
             sky_background = ""
             print("\n     >>> Do you want to calculate the sky background using annuli or a 'sky star'?")
             sky_background = str((raw_input("     (annuli/star) = ")))
@@ -1152,7 +1159,7 @@ if __name__ == '__main__':
                                       & (sky_pix_y > y_min_pix_objects-pix_limit)]
 
                     # break loop if sky is not near to an extracted object
-                    if index_sky.any() == True:
+                    if index_sky.any() == True:  # changed from if X == True:
                         print("\n     !!! ERROR: sky background aperture is too close to an object \n")
                         continue
                     else:
@@ -1248,12 +1255,26 @@ if __name__ == '__main__':
             # target curve of growth...
             for k in ap_size:
 
-                flux, fluxerr, flag = sep.sum_ellipse(red_image, objects['x'][index], objects['y'][index], int(k)*objects['a'][index], int(k)*objects['b'][index], objects['theta'][index], r=1.0, err=bkg.globalrms, gain=gain, mask=None)
+                flux, fluxerr, flag = sep.sum_ellipse(red_image,
+                                                      objects['x'][index],
+                                                      objects['y'][index],
+                                                      int(k)*objects['a'][index],
+                                                      int(k)*objects['b'][index],
+                                                      objects['theta'][index], r=1.0,
+                                                      err=bkg.globalrms,
+                                                      gain=gain, mask=None)
 
                 cg_flux.extend(flux)
                 cg_area.extend(np.pi*int(k)*objects['a'][index]*int(k)*objects['b'][index])
 
-                flux_comp, fluxerr_comp, flag_comp = sep.sum_ellipse(red_image, objects['x'][index_comp], objects['y'][index_comp], int(k)*objects['a'][index_comp], int(k)*objects['b'][index_comp], objects['theta'][index_comp], r=1.0, err=bkg.globalrms, gain=gain, mask=None)
+                flux_comp, fluxerr_comp, flag_comp = sep.sum_ellipse(red_image,
+                                                                     objects['x'][index_comp],
+                                                                     objects['y'][index_comp],
+                                                                     int(k)*objects['a'][index_comp],
+                                                                     int(k)*objects['b'][index_comp],
+                                                                     objects['theta'][index_comp],
+                                                                     r=1.0, err=bkg.globalrms,
+                                                                     gain=gain, mask=None)
 
                 cg_flux_comp.extend(flux_comp)
                 cg_area_comp.extend(np.pi*int(k)*objects['a'][index_comp]*int(k)*objects['b'][index_comp])
@@ -1265,7 +1286,8 @@ if __name__ == '__main__':
 
             ax1 = fig4.add_subplot(grid[0:5, 0:], xticklabels=[])
             ax1.plot(cg_area, cg_flux, 'g-', zorder=1)
-            ax1.scatter(cg_area, cg_flux, marker='o', facecolor='g', edgecolor='k', s=200, label='target', zorder=2)
+            ax1.scatter(cg_area, cg_flux, marker='o', facecolor='g',
+                        edgecolor='k', s=200, label='target', zorder=2)
             ax1.set_xlim(-40, np.max(cg_area)+40)
             ax1.set_ylim(0, 1.1*np.max(cg_flux))
             ax1.legend(loc='lower right')
@@ -1276,7 +1298,8 @@ if __name__ == '__main__':
 
             ax2 = fig4.add_subplot(grid[5:, 0:])
             ax2.plot(cg_area_comp, cg_flux_comp, 'b-', zorder=1)
-            ax2.scatter(cg_area_comp, cg_flux_comp, marker='o', facecolor='b', edgecolor='k', s=200, label='comparison', zorder=2)
+            ax2.scatter(cg_area_comp, cg_flux_comp, marker='o', facecolor='b',
+                        edgecolor='k', s=200, label='comparison', zorder=2)
             ax2.set_xlim(-40, np.max(cg_area)+40)
             ax2.set_ylim(0, 1.1*np.max(cg_flux_comp))
             ax2.legend(loc='lower right')
@@ -1288,17 +1311,19 @@ if __name__ == '__main__':
 
             # plot aperture size labels
             for n1, n2, n3 in zip(cg_area[1:], cg_flux[1:], ap_size[1:]):
-                ax1.text(n1, n2, str(n3), fontsize=10, color='w', va='center', ha='center', zorder=3)
+                ax1.text(n1, n2, str(n3), fontsize=10, color='w', va='center',
+                         ha='center', zorder=3)
 
             for m1, m2, m3 in zip(cg_area_comp[1:], cg_flux_comp[1:], ap_size[1:]):
-                ax2.text(m1, m2, str(m3), fontsize=10, color='w', va='center', ha='center', zorder=3)
+                ax2.text(m1, m2, str(m3), fontsize=10, color='w', va='center',
+                         ha='center', zorder=3)
 
             # plt.title("Curve of Growth for varying aperture sizes")
             plt.show(block=False)
             plt.pause(0.1)
 
             if do_plot:
-                plt.savefig("curve_of_growth.eps", dpi=300)
+                plt.savefig(out_dir+"curve_of_growth.eps", dpi=300)
 
             # user chooses 'guess' for target ellipse from curve of growth
             while True:
@@ -1351,21 +1376,32 @@ if __name__ == '__main__':
 
             # masking image for TARGET (i.e. mask all other sources)
             image_mask_targ = np.zeros(red_image.shape, dtype=np.bool)
-            sep.mask_ellipse(image_mask_targ, objects['x'][~index], objects['y'][~index], opt_ap_size*objects['a'][~index], opt_ap_size*objects['b'][~index], objects['theta'][~index], r=1.0)
+            sep.mask_ellipse(image_mask_targ, objects['x'][~index],
+                             objects['y'][~index],
+                             opt_ap_size*objects['a'][~index],
+                             opt_ap_size*objects['b'][~index],
+                             objects['theta'][~index], r=1.0)
             index_mask_targ = np.where((image_mask_targ is True))
             masked_red_image_targ = np.copy(red_image)
             masked_red_image_targ[index_mask_targ] = np.nan
 
             # masking image for COMPARISON (i.e. mask all other sources)
             image_mask_comp = np.zeros(red_image.shape, dtype=np.bool)
-            sep.mask_ellipse(image_mask_comp, objects['x'][~index_comp], objects['y'][~index_comp], opt_ap_size*objects['a'][~index_comp], opt_ap_size*objects['b'][~index_comp], objects['theta'][~index_comp], r=1.0)
+            sep.mask_ellipse(image_mask_comp, objects['x'][~index_comp],
+                             objects['y'][~index_comp],
+                             opt_ap_size*objects['a'][~index_comp],
+                             opt_ap_size*objects['b'][~index_comp],
+                             objects['theta'][~index_comp], r=1.0)
             index_mask_comp = np.where((image_mask_comp is True))
             masked_red_image_comp = np.copy(red_image)
             masked_red_image_comp[index_mask_comp] = np.nan
 
             # masking image for ALL SOURCES (i.e. mask all other sources)
             image_mask_all = np.zeros(red_image.shape, dtype=np.bool)
-            sep.mask_ellipse(image_mask_all, objects['x'], objects['y'], opt_ap_size*objects['a'], opt_ap_size*objects['b'], objects['theta'], r=1.0)
+            sep.mask_ellipse(image_mask_all, objects['x'], objects['y'],
+                             opt_ap_size*objects['a'],
+                             opt_ap_size*objects['b'],
+                             objects['theta'], r=1.0)
             index_mask_all = np.where((image_mask_all is True))
             masked_red_image_all = np.copy(red_image)
             masked_red_image_all[index_mask_all] = np.nan
@@ -1376,7 +1412,8 @@ if __name__ == '__main__':
                 fig5, ax = plt.subplots(figsize=(6, 6), num=5)
                 plt.subplots_adjust(left=0.15, right=0.9, top=0.95, bottom=0.15)
                 m, s = np.mean(red_image), np.std(red_image)
-                im = ax.imshow(red_image, interpolation='nearest', cmap='gray', vmin=m-s, vmax=m+s, origin='lower')
+                im = ax.imshow(red_image, interpolation='nearest', cmap='gray',
+                               vmin=m-s, vmax=m+s, origin='lower')
                 # im = ax.imshow(masked_red_image_targ, interpolation='nearest', cmap='gray', vmin=m-s, vmax=m+s, origin='lower') # plot masked comparison image
                 # im = ax.imshow(masked_red_image_comp, interpolation='nearest', cmap='gray', vmin=m-s, vmax=m+s, origin='lower') # plot masked comparison image
                 tick_plot(ax, red_image[0], red_image[1])  # call tick function
@@ -1418,7 +1455,7 @@ if __name__ == '__main__':
                                  objects['theta'][index], 'none', 'gold',
                                  [1.0])
 
-                plt.savefig("labelled_sources.eps", dpi=300)
+                plt.savefig(out_dir+"labelled_sources.eps", dpi=300)
                 plt.close(5)
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -1429,9 +1466,22 @@ if __name__ == '__main__':
             try:
                 # target star aperture photometry...
                 if do_targ:
-                    flux, fluxerr, flag = sep.sum_ellipse(red_image, objects['x'][index], objects['y'][index], opt_ap_size*objects['a'][index], opt_ap_size*objects['b'][index], objects['theta'][index], r=1.0, err=bkg.globalrms, gain=gain, mask=image_mask_targ)
+                    flux, fluxerr, flag = sep.sum_ellipse(red_image,
+                                                          objects['x'][index],
+                                                          objects['y'][index],
+                                                          opt_ap_size*objects['a'][index],
+                                                          opt_ap_size*objects['b'][index],
+                                                          objects['theta'][index], r=1.0,
+                                                          err=bkg.globalrms, gain=gain,
+                                                          mask=image_mask_targ)
 
-                    flux_sky, fluxerr_sky, flag_sky = sep.sum_ellipse(red_image, sky_pix_x, sky_pix_y, opt_ap_size*objects['a'][index], opt_ap_size*objects['b'][index], objects['theta'][index], r=1.0, err=bkg.globalrms, gain=gain, mask=image_mask_all)
+                    flux_sky, fluxerr_sky, flag_sky = sep.sum_ellipse(red_image,
+                                                                      sky_pix_x, sky_pix_y,
+                                                                      opt_ap_size*objects['a'][index],
+                                                                      opt_ap_size*objects['b'][index],
+                                                                      objects['theta'][index], r=1.0,
+                                                                      err=bkg.globalrms, gain=gain,
+                                                                      mask=image_mask_all)
 
                     # scale target flux by gain and correct for background
                     flux, flux_sky = gain*flux, gain*flux_sky
@@ -1443,9 +1493,22 @@ if __name__ == '__main__':
 
                 # comparison star aperture photometry...
                 if do_comp:
-                    flux_comp, fluxerr_comp, flag_comp = sep.sum_ellipse(red_image, objects['x'][index_comp], objects['y'][index_comp], opt_ap_size_comp*objects['a'][index_comp], opt_ap_size_comp*objects['b'][index_comp], objects['theta'][index_comp], r=1.0, err=bkg.globalrms, gain=gain, mask=image_mask_comp)
+                    flux_comp, fluxerr_comp, flag_comp = sep.sum_ellipse(red_image,
+                                                                         objects['x'][index_comp],
+                                                                         objects['y'][index_comp],
+                                                                         opt_ap_size_comp*objects['a'][index_comp],
+                                                                         opt_ap_size_comp*objects['b'][index_comp],
+                                                                         objects['theta'][index_comp],
+                                                                         r=1.0, err=bkg.globalrms,
+                                                                         gain=gain, mask=image_mask_comp)
 
-                    flux_comp_sky, fluxerr_comp_sky, flag_comp_sky = sep.sum_ellipse(red_image, sky_pix_x, sky_pix_y, opt_ap_size_comp*objects['a'][index_comp], opt_ap_size_comp*objects['b'][index_comp], objects['theta'][index_comp], r=1.0, err=bkg.globalrms, gain=gain, mask=image_mask_all)
+                    flux_comp_sky, fluxerr_comp_sky, flag_comp_sky = sep.sum_ellipse(red_image,
+                                                                                     sky_pix_x, sky_pix_y,
+                                                                                     opt_ap_size_comp*objects['a'][index_comp],
+                                                                                     opt_ap_size_comp*objects['b'][index_comp],
+                                                                                     objects['theta'][index_comp],
+                                                                                     r=1.0, err=bkg.globalrms,
+                                                                                     gain=gain, mask=image_mask_all)
 
                     # scale comparison flux by gain and correct for background
                     flux_comp, flux_comp_sky = gain*flux_comp, gain*flux_comp_sky
@@ -1465,13 +1528,31 @@ if __name__ == '__main__':
         if sky_background == "annuli":
             try:
                 if do_targ:
-                    flux, fluxerr, flag = sep.sum_ellipse(red_image, objects['x'][index], objects['y'][index], opt_ap_size*objects['a'][index], opt_ap_size*objects['b'][index], objects['theta'][index], r=1.0, err=bkg.globalrms, gain=gain, mask=image_mask_targ, bkgann=(1.5*opt_ap_size*objects['a'][index], 2.0*opt_ap_size*objects['a'][index]))
+                    flux, fluxerr, flag = sep.sum_ellipse(red_image,
+                                                          objects['x'][index],
+                                                          objects['y'][index],
+                                                          opt_ap_size*objects['a'][index],
+                                                          opt_ap_size*objects['b'][index],
+                                                          objects['theta'][index], r=1.0,
+                                                          err=bkg.globalrms, gain=gain,
+                                                          mask=image_mask_targ,
+                                                          bkgann=(1.5*opt_ap_size*objects['a'][index],
+                                                                  2.0*opt_ap_size*objects['a'][index]))
                     flux, fluxerr = gain*flux, gain*fluxerr
                 else:
                     flux, fluxerr = np.nan, np.nan
 
                 if do_comp:
-                    flux_comp, fluxerr_comp, flag_comp = sep.sum_ellipse(red_image, objects['x'][index_comp], objects['y'][index_comp], opt_ap_size*objects['a'][index_comp], opt_ap_size*objects['b'][index_comp], objects['theta'][index_comp], r=1.0, err=bkg.globalrms, gain=gain, mask=image_mask_comp, bkgann=(1.5*opt_ap_size*objects['a'][index_comp], 2.0*opt_ap_size*objects['a'][index_comp]))
+                    flux_comp, fluxerr_comp, flag_comp = sep.sum_ellipse(red_image,
+                                                                         objects['x'][index_comp],
+                                                                         objects['y'][index_comp],
+                                                                         opt_ap_size*objects['a'][index_comp],
+                                                                         opt_ap_size*objects['b'][index_comp],
+                                                                         objects['theta'][index_comp],
+                                                                         r=1.0, err=bkg.globalrms,
+                                                                         gain=gain, mask=image_mask_comp,
+                                                                         bkgann=(1.5*opt_ap_size*objects['a'][index_comp],
+                                                                                 2.0*opt_ap_size*objects['a'][index_comp]))
                     flux_comp, fluxerr_comp = gain*flux_comp, gain*fluxerr_comp
                 else:
                     flux_comp, fluxerr_comp = np.nan, np.nan
@@ -1503,10 +1584,10 @@ if __name__ == '__main__':
         if sky_background == "star":
             sky_pix_x = sky_pix_x + change_pix_x
             sky_pix_y = sky_pix_y + change_pix_y
-        if do_targ is True:
+        if do_targ:
             init_pix_x = 0.5*(x_min_pix_objects[index] + x_max_pix_objects[index])
             init_pix_y = 0.5*(y_min_pix_objects[index] + y_max_pix_objects[index])
-        if do_comp is True:
+        if do_comp:
             comp_pix_x = 0.5*(x_min_pix_objects[index_comp] + x_max_pix_objects[index_comp])
             comp_pix_y = 0.5*(y_min_pix_objects[index_comp] + y_max_pix_objects[index_comp])
 
@@ -1530,10 +1611,8 @@ if ext_coeff:
 diff_mag = [a-b for a, b in zip(targ_mag, comp_mag)]
 diff_mag_err = [np.sqrt((a**2.0)+(b**2.0)) for a, b in zip(targ_mag_err, comp_mag_err)]
 
-
 # sigma-clip outliers if do_clip is set to True
 if do_clip:
-
     # convert to arrays
     final_time_BJD = np.array(final_time_BJD)
     diff_mag = np.array(diff_mag)
@@ -1588,15 +1667,23 @@ if instrument == "STE":
     t0_start = t0_start[0:-7]
     image_filename = str(t0_start)+"_STE3"
 
-datafile_id = open(str(star_name)+"_"+str(image_filename)+"_"+str(observatory)+".dat", 'w+')
+datafile_id = open(out_dir+str(star_name)+"_"+str(image_filename)+"_"+str(observatory)+".dat", 'w+')
 if ext_coeff:
-    data = np.array([final_time_BJD, diff_mag, diff_mag_err, targ_mag, targ_mag_err, comp_mag, comp_mag_err, final_time_HJD, targ_mag_corr, comp_mag_corr, targ_airmass])
+    data = np.array([final_time_BJD, diff_mag, diff_mag_err, targ_mag,
+                    targ_mag_err, comp_mag, comp_mag_err, final_time_HJD,
+                    targ_mag_corr, comp_mag_corr, targ_airmass])
     datafile_id.write("#BJD-2450000.0_(TDB)   diff_mag   diff_mag_err   target_mag   target_mag_err   comp_mag   comp_mag_err   HJD-2450000.0_(UTC)   targ_mag_corr   comp_mag_corr   target_airmass\n")
-    np.savetxt(datafile_id, data.T, fmt=['%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.4f'],delimiter='   ')
+    np.savetxt(datafile_id, data.T,
+               fmt=['%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f',
+                    '%.8f', '%.8f', '%.8f', '%.4f'], delimiter='   ')
 else:
-    data = np.array([final_time_BJD, diff_mag, diff_mag_err, targ_mag, targ_mag_err, comp_mag, comp_mag_err, final_time_HJD, targ_airmass])
+    data = np.array([final_time_BJD, diff_mag, diff_mag_err, targ_mag,
+                    targ_mag_err, comp_mag, comp_mag_err, final_time_HJD,
+                    targ_airmass])
     datafile_id.write("#BJD-2450000.0_(TDB)   diff_mag   diff_mag_err   target_mag   target_mag_err   comp_mag   comp_mag_err   HJD-2450000.0_(UTC)   target_airmass\n")
-    np.savetxt(datafile_id, data.T, fmt=['%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.4f'],delimiter='   ')
+    np.savetxt(datafile_id, data.T,
+               fmt=['%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f', '%.8f',
+                    '%.8f', '%.4f'], delimiter='   ')
 datafile_id.close()
 
 
@@ -1612,7 +1699,7 @@ if do_plot:
         plt.scatter(final_time_BJD, diff_mag, c='k')
     plt.xlabel("BJD - 2450000.0 (TDB)")
     plt.ylabel(r"$\Delta$mag")
-    plt.savefig(str(star_name)+"_"+str(image_filename)+"_"+str(observatory)+".eps", dpi=300)
+    plt.savefig(out_dir+str(star_name)+"_"+str(image_filename)+"_"+str(observatory)+".eps", dpi=300)
     plt.close(6)
 
 
