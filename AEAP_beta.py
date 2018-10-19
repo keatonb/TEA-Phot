@@ -1159,7 +1159,7 @@ if __name__ == '__main__':
                                       & (sky_pix_y > y_min_pix_objects-pix_limit)]
 
                     # break loop if sky is not near to an extracted object
-                    if index_sky.any() == True:  # changed from if X == True:
+                    if index_sky.any() == True:  # cannot be if X == True:
                         print("\n     !!! ERROR: sky background aperture is too close to an object \n")
                         continue
                     else:
@@ -1581,7 +1581,7 @@ if __name__ == '__main__':
         # re-define (X,Y) positions for sources in case of telescope jitter
         change_pix_x = (init_pix_x - 0.5*(x_min_pix_objects[index] + x_max_pix_objects[index]))
         change_pix_y = (init_pix_y - 0.5*(y_min_pix_objects[index] + y_max_pix_objects[index]))
-        if sky_background == "star":
+        if sky_background == "star" and do_targ is True:
             sky_pix_x = sky_pix_x + change_pix_x
             sky_pix_y = sky_pix_y + change_pix_y
         if do_targ:
