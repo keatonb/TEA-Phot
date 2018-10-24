@@ -1176,12 +1176,12 @@ if __name__ == '__main__':
                 print("     > Sky-Star background located at:")
                 print("     > (X,Y) = [ "+str('%.2f' % sky_pix_x)+" , "+str('%.2f' % sky_pix_y)+" ] \n")
 
-                print("     >>> Are you happy with you choice of target (green) and comparison (blue) stars and sky background (yellow)?")
+                print("     >>> Are you happy with your choice of target (green) and comparison (blue) stars and sky background (yellow)?")
                 happy = str((raw_input("     (y/n) = ")))
 
                 while happy not in (Y_proceed+N_proceed+Q_proceed):
                     print("\n     !!! ERROR: you need to type y to proceed or n to exit \n")
-                    print("     >>> Are you happy with you choice of target (green) and comparison (blue) stars and sky background (yellow)?")
+                    print("     >>> Are you happy with your choice of target (green) and comparison (blue) stars and sky background (yellow)?")
                     happy = str((raw_input("     (y/n) = ")))
                 if happy in (N_proceed+Q_proceed):
                     print("\n     > You have specified that incorrect objects have been chosen: exiting program \n")
