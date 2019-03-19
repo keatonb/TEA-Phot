@@ -2,7 +2,7 @@
 
 """
 PROGRAMME NAME:
-    AEAP_beta.py
+    TEA-Phot.py
 
     Copyright (C) 2019
     D. M. Bowman (IvS, KU Leuven, Belgium)
@@ -38,12 +38,12 @@ DESCRIPTION:
         '! WARNING:' and '!!! ERROR:', respectively.
 
 USAGE:
-    - For help, type at the command line: python AEAP_beta.py --help
+    - For help, type at the command line: python TEA-Phot.py --help
     - MINIMUM USAGE:
-        python AEAP_beta.py <observatory> <instrument> <image.fits>
+        python TEA-Phot.py <observatory> <instrument> <image.fits>
 
     - OPTIONS:
-        python AEAP_beta.py <observatory> <instrument> <image.fits>
+        python TEA-Phot.py <observatory> <instrument> <image.fits>
             --bias <bias.fits> --dark <dark.fits> --flat <flat.fits>
             --object <object> --coord <"19:22:43.56 -21:25:27.53">
             --source_sigma <10> --extract <True> --do_plot <True>
@@ -653,9 +653,9 @@ if __name__ == '__main__':
     matplotlib.rcParams['ytick.direction'] = 'out'
 
     # read command line arguments
-    parser = argparse.ArgumentParser(prog="AEAP_beta.py",
+    parser = argparse.ArgumentParser(prog="TEA-Phot.py",
                                      description="----------------- Adaptive Elliptical Aperture Photometry -----------------",
-                                     epilog="AEAP_beta.py \n"
+                                     epilog="TEA-Phot.py \n"
                                             "Copyright (C) 2019 \n"
                                             "(D.M.Bowman, KU Leuven and D.L.Holdsworth, UCLan). \n"
                                             "This program comes with ABSOLUTELY NO WARRANTY. \n"
