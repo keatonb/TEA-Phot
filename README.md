@@ -1,8 +1,7 @@
 # This is the [adapTive Elliptical Aperture PHOTometry (TEA-Phot)](https://bitbucket.org/DominicBowman/tea-phot) repository
 
 **TEA-Phot** is a user-friendly pipeline to process ground-based photometry and extract light curves of stars for the purpose of variability and asteroseismology. **TEA-Phot** is coded in python and has no external software  dependencies such as IRAF, DS9 or Gaia, and utilises the
- flexible python module [SEP](https://sep.readthedocs.io/en/v1.0.x/) at its core. The code is optimised for high-cadence ground-based
- photometry, such as that provided by the SHOC and STE instruments at the [South African Astronomical Observatory (SAAO)](https://www.saao.ac.za), but can be easily modified for different instruments at different observatories.
+ flexible python module [SEP](https://sep.readthedocs.io/en/v1.0.x/) at its core. The code is optimised for high-cadence ground-based photometry, such as that provided by the SHOC and STE instruments at the [South African Astronomical Observatory (SAAO)](https://www.saao.ac.za), but can be easily modified for different instruments at different observatories.
 
 **TEA-Phot** is an open-source package, GNU-licensed, and any improvements provided by the users are well accepted. See disclaimer below and GNU
  License in gpl-3.0.txt.
