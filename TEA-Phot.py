@@ -4,7 +4,7 @@
 PROGRAMME NAME:
     TEA-Phot.py
 
-    test
+    10th July 2019
 
     Copyright (C) 2019
     D. M. Bowman (IvS, KU Leuven, Belgium)
@@ -971,6 +971,22 @@ if __name__ == '__main__':
     # define looping criteria for images
     for i in range(n_start, n_slice):
 
+        # read individual 'ith' image frame (e.g. needed for SHOC)
+        if cube:
+            hdu.data = data[i, :, :]
+        # read image 'ith' FITS file header and data (e.g. needed for STE)
+        else:
+            hdulist = fits.open(image_dir+'/'+image_files[i],
+                                ignore_missing_end=True)
+            if image_ext == ".fits":
+                hdu = hdulist[0]
+                header = hdulist[0].header
+            if image_ext == ".fits.fz":
+                hdu = hdulist[1]
+                header = hdulist[1].header
+            hdu.data = hdu.data
+            hdulist.close()
+
         # boolean to do aperture photometry unless error
         do_targ, do_comp = True, True
 
@@ -989,22 +1005,6 @@ if __name__ == '__main__':
             if instrument == "SHOC":
                 print("\n     > SHOC triggering is: {}".format(trigger))
             print("     > Exposure time is: {} (sec)".format(exp_time*86400.))
-
-        # read individual 'ith' image frame (e.g. needed for SHOC)
-        if cube:
-            hdu.data = data[i, :, :]
-        # read image 'ith' FITS file header and data (e.g. needed for STE)
-        else:
-            hdulist = fits.open(image_dir+'/'+image_files[i],
-                                ignore_missing_end=True)
-            if image_ext == ".fits":
-                hdu = hdulist[0]
-                header = hdulist[0].header
-            if image_ext == ".fits.fz":
-                hdu = hdulist[1]
-                header = hdulist[1].header
-            hdu.data = hdu.data
-            hdulist.close()
 
         # Create an image mask to avoid overscan regions on edges of CCD
         if instrument == "STE":
@@ -1329,16 +1329,16 @@ if __name__ == '__main__':
         # location based on previous location
         else:
             # find closest source to target in previous frame
-            index = np.r_[(init_pix_x < x_max_pix_objects)
-                          & (init_pix_x > x_min_pix_objects)
-                          & (init_pix_y < y_max_pix_objects)
-                          & (init_pix_y > y_min_pix_objects)]
+            index = np.r_[(init_pix_x < x_max_pix_objects+pix_limit)
+                          & (init_pix_x > x_min_pix_objects-pix_limit)
+                          & (init_pix_y < y_max_pix_objects+pix_limit)
+                          & (init_pix_y > y_min_pix_objects-pix_limit)]
 
             # find closest source to comparison in previous frame
-            index_comp = np.r_[(comp_pix_x < x_max_pix_objects)
-                               & (comp_pix_x > x_min_pix_objects)
-                               & (comp_pix_y < y_max_pix_objects)
-                               & (comp_pix_y > y_min_pix_objects)]
+            index_comp = np.r_[(comp_pix_x < x_max_pix_objects+pix_limit)
+                               & (comp_pix_x > x_min_pix_objects-pix_limit)
+                               & (comp_pix_y < y_max_pix_objects+pix_limit)
+                               & (comp_pix_y > y_min_pix_objects-pix_limit)]
 
         # skip frame if no stars are detected
         if len(objects[index]) < 1:
@@ -1853,7 +1853,7 @@ datafile_id = open(out_dir + str(star_name) + "_" + str(image_filename)
 if ext_coeff:
     data = np.array([final_time_BJD, diff_mag, diff_mag_err, targ_mag,
                     targ_mag_err, comp_mag, comp_mag_err, final_time_HJD,
-                    targ_mag_corr, comp_mag_corr, targ_airmass], np.float32)
+                    targ_mag_corr, comp_mag_corr, targ_airmass], np.float64)
     header = "BJD-2450000.0_(TDB)   diff_mag   diff_mag_err   target_mag" \
              "   target_mag_err   comp_mag   comp_mag_err" \
              "   HJD-2450000.0_(UTC)   targ_mag_corr   comp_mag_corr" \
@@ -1862,7 +1862,7 @@ if ext_coeff:
 else:
     data = np.array([final_time_BJD, diff_mag, diff_mag_err, targ_mag,
                     targ_mag_err, comp_mag, comp_mag_err, final_time_HJD,
-                    targ_airmass], np.float32)
+                    targ_airmass], np.float64)
     header = "BJD-2450000.0_(TDB)   diff_mag   diff_mag_err   target_mag" \
              "   target_mag_err   comp_mag   comp_mag_err" \
              "   HJD-2450000.0_(UTC)   target_airmass"
