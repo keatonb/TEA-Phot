@@ -1,3 +1,5 @@
+## This version of TEA-Phot is modified from the original version by Keaton Bell to be used with data from Agile on the ARC 3.5-meter at APO
+
 # This is the [adapTive Elliptical Aperture PHOTometry (TEA-Phot)](https://bitbucket.org/DominicBowman/tea-phot) repository
 
 **TEA-Phot** is a user-friendly pipeline to process ground-based photometry and extract light curves of stars for the purpose of variability and asteroseismology. **TEA-Phot** is coded in python and has no external software  dependencies such as IRAF, DS9 or Gaia, and utilises the
