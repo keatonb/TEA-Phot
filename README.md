@@ -1,4 +1,4 @@
-## This version of TEA-Phot is modified from the original version by Keaton Bell to be used with data from Agile on the ARC 3.5-meter at APO
+## This version of TEA-Phot is modified from the original version by Keaton Bell to work with data from Agile on the ARC 3.5-meter at APO (eventually)
 
 # This is the [adapTive Elliptical Aperture PHOTometry (TEA-Phot)](https://bitbucket.org/DominicBowman/tea-phot) repository
 
